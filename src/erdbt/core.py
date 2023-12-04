@@ -67,8 +67,8 @@ def relatedModels(manifest, test_name):
 
     for node in manifest["nodes"].values():
         if "test_metadata" in node and node["test_metadata"].get("name").lower() == test_name.lower():
-            related_models.append(node["refs"][0]["name"].lower())
-            related_models.append(node["refs"][1]["name"].lower())
+            related_models.append(node["refs"][0][0].lower())
+            related_models.append(node["refs"][1][0].lower())
 
     related_models = list(set(related_models))
 
@@ -87,8 +87,8 @@ def createRelatonship(dbml_path, manifest, test_name):
 
     for node in manifest["nodes"].values():
         if "test_metadata" in node and node["test_metadata"]["name"].lower() == test_name.lower():
-            rel_list.append((node["refs"][0]["name"].lower(), node["test_metadata"]["kwargs"]["field"].lower(),
-                             node["refs"][1]["name"].lower(), node["test_metadata"]["kwargs"]["column_name"].lower()))
+            rel_list.append((node["refs"][0][0].lower(), node["test_metadata"]["kwargs"]["field"].lower(),
+                             node["refs"][1][0].lower(), node["test_metadata"]["kwargs"]["column_name"].lower()))
 
     rel_list = list(set(rel_list))
 
