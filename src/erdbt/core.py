@@ -67,8 +67,8 @@ def relatedModels(manifest, test_name):
 
     for node in manifest["nodes"].values():
         if "test_metadata" in node and node["test_metadata"].get("name").lower() == test_name.lower():
-            related_models.append(node["refs"][0][0].lower())
-            related_models.append(node["refs"][1][0].lower())
+            related_models.append(node["refs"][0]["name"].lower())
+            related_models.append(node["refs"][1]["name"].lower())
 
     related_models = list(set(related_models))
 
@@ -87,13 +87,38 @@ def createRelatonship(dbml_path, manifest, test_name):
 
     for node in manifest["nodes"].values():
         if "test_metadata" in node and node["test_metadata"]["name"].lower() == test_name.lower():
-            rel_list.append((node["refs"][0][0].lower(), node["test_metadata"]["kwargs"]["field"].lower(),
-                             node["refs"][1][0].lower(), node["test_metadata"]["kwargs"]["column_name"].lower()))
+            rel_list.append((node["refs"][0]["name"].lower(), node["test_metadata"]["kwargs"]["field"].lower(),
+                             node["refs"][1]["name"].lower(), node["test_metadata"]["kwargs"]["column_name"].lower()))
 
     rel_list = list(set(rel_list))
 
     for rel in rel_list:
         dbml_path.write(f"Ref: {rel[0]}.{rel[1]} <> {rel[2]}.{rel[3]} \n")
+
+
+def createTableGroup(dbml_path, manifest, related_models):
+    """Create a Table Group in the dbml file
+
+    Args:
+        dbml_path (Path): The file path 
+        manifest (dict): The dbt manifest
+        related_models (list): Related models
+    """
+    start = "{"
+    end = "}"
+    grp_dict = {}
+
+    for node in manifest["nodes"].values():
+        if node["name"] in related_models:
+            if node["refs"][0]["name"].lower() not in grp_dict:
+                grp_dict[node["refs"][0]["name"].lower()] = []
+            grp_dict[node["refs"][0]["name"].lower()].append(node["name"])
+
+    for source, models in grp_dict.items():
+        dbml_path.write(f"TableGroup {source} {start} \n")
+        for model in models:
+            dbml_path.write(f"{model} \n")
+        dbml_path.write(f"{end} \n")    
 
 
 def genereatedbml(manifest_path, catalog_path, dbml_path, test_name):
@@ -114,6 +139,7 @@ def genereatedbml(manifest_path, catalog_path, dbml_path, test_name):
     related_models = relatedModels(manifest, test_name)
 
     with open(dbml_path, "w") as dbml_file:
+        createTableGroup(dbml_file, manifest, related_models)
         for model_name in model_names:
             model = catalog["nodes"][model_name]
             if model["metadata"]["name"].lower() in related_models:
